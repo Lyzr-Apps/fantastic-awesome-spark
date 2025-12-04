@@ -580,29 +580,27 @@ function ExamScreen({ exam, topic, onSubmit }: { exam: Exam; topic: string; onSu
           Previous
         </Button>
 
-        <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-          <DialogTrigger asChild>
-            {currentQuestionIndex === allQuestions.length - 1 && (
-              <Button disabled={submitLoading} className="bg-green-600 hover:bg-green-700">
-                {submitLoading ? 'Submitting...' : 'Submit Exam'}
-              </Button>
-            )}
-          </DialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Submit Exam?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to submit your exam? This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex gap-3 justify-end">
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleSubmitExam} className="bg-green-600">
-                Submit
-              </AlertDialogAction>
-            </div>
-          </AlertDialogContent>
-        </AlertDialog>
+        {currentQuestionIndex === allQuestions.length - 1 && (
+          <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+            <Button disabled={submitLoading} className="bg-green-600 hover:bg-green-700" onClick={() => setShowSubmitDialog(true)}>
+              {submitLoading ? 'Submitting...' : 'Submit Exam'}
+            </Button>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Submit Exam?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to submit your exam? This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-3 justify-end">
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSubmitExam} className="bg-green-600">
+                  Submit
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
 
         <Button
           onClick={() => setCurrentQuestionIndex(Math.min(allQuestions.length - 1, currentQuestionIndex + 1))}
