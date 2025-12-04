@@ -383,49 +383,101 @@ function generateFallbackResults(exam: Exam, answers: any): ExamResult {
 
 // Fallback exam generator for demo/testing
 function generateFallbackExam(content: string, mcqCount: number, fillCount: number, shortCount: number): Exam {
-  const words = content.split(/\s+/).filter(w => w.length > 4)
-  const keyTerms = words.slice(0, Math.min(20, words.length))
+  // Extract sentences and key terms
+  const sentences = content.match(/[^.!?]+[.!?]+/g) || [content]
+  const cleanSentences = sentences.map(s => s.trim()).filter(s => s.length > 10)
 
+  // Extract potential key terms (longer words)
+  const words = content.split(/\s+/).filter(w => w.length > 5)
+  const uniqueWords = [...new Set(words)].slice(0, 30)
+
+  // Generate MCQ questions based on content
   const mcqQuestions: ExamQuestion[] = []
-  for (let i = 0; i < mcqCount; i++) {
-    const term = keyTerms[i % keyTerms.length]
+  const mcqTemplates = [
+    (word: string) => `Which of the following is TRUE about ${word}?`,
+    (word: string) => `What does ${word} refer to in this context?`,
+    (word: string) => `How is ${word} related to the main topic?`,
+    (word: string) => `Which statement best defines ${word}?`,
+    (word: string) => `What is the PRIMARY function of ${word}?`,
+    (word: string) => `According to the material, ${word} is BEST described as:`,
+    (word: string) => `Which example BEST illustrates ${word}?`,
+    (word: string) => `What is the relationship between the content and ${word}?`
+  ]
+
+  for (let i = 0; i < mcqCount && i < uniqueWords.length; i++) {
+    const word = uniqueWords[i].replace(/[^a-zA-Z0-9 ]/g, '')
+    const template = mcqTemplates[i % mcqTemplates.length]
+
     mcqQuestions.push({
       question_number: i + 1,
-      question_text: `What is related to ${term}?`,
+      question_text: template(word),
       options: {
-        A: `Option A related to ${term}`,
-        B: `Correct answer about ${term}`,
-        C: `Option C about something else`,
-        D: `Option D unrelated`
+        A: `It is a fundamental concept that is widely studied`,
+        B: `It plays an important role in understanding the subject matter`,
+        C: `It is mentioned briefly but has limited relevance`,
+        D: `It is an outdated concept no longer in use`
       },
-      difficulty: ['Easy', 'Medium', 'Hard'][(i * 7) % 3]
+      difficulty: i % 3 === 0 ? 'Easy' : i % 3 === 1 ? 'Medium' : 'Hard'
     })
   }
 
+  // Generate fill-in-the-blank questions
   const fillBlankQuestions: ExamQuestion[] = []
+  const fillTemplates = [
+    `The main concept discussed is _______.`,
+    `_______ is a key element in understanding this topic.`,
+    `According to the material, _______ is essential for this process.`,
+    `The fundamental principle involves _______.`,
+    `_______ serves as the foundation for this theory.`,
+    `An important aspect of this topic is _______.`,
+    `The most critical factor is _______.`,
+    `_______ is used to describe this phenomenon.`
+  ]
+
   for (let i = 0; i < fillCount; i++) {
-    const term = keyTerms[i % keyTerms.length]
     fillBlankQuestions.push({
       question_number: i + 1,
-      question_text: `The term _______ is important in this context.`,
-      difficulty: ['Easy', 'Medium', 'Hard'][(i * 5) % 3]
-    })
-  }
-
-  const truefalseQuestions: ExamQuestion[] = []
-  for (let i = 0; i < 4; i++) {
-    truefalseQuestions.push({
-      question_number: i + 1,
-      statement: `This is a statement about the content that is ${i % 2 === 0 ? 'true' : 'false'}.`,
+      question_text: fillTemplates[i % fillTemplates.length],
       difficulty: i % 2 === 0 ? 'Easy' : 'Medium'
     })
   }
 
+  // Generate true/false questions from content
+  const truefalseQuestions: ExamQuestion[] = []
+  const tfTemplates = [
+    `The material emphasizes the importance of understanding core principles.`,
+    `All concepts mentioned in the text are equally important.`,
+    `The subject matter is complex and requires careful study.`,
+    `Key terms are used consistently throughout the material.`,
+    `Understanding this topic requires knowledge of related fields.`,
+    `The content provides multiple perspectives on the subject.`,
+    `Practical application of concepts is important.`,
+    `This is a well-established and widely accepted area of study.`
+  ]
+
+  for (let i = 0; i < Math.min(4, tfTemplates.length); i++) {
+    truefalseQuestions.push({
+      question_number: i + 1,
+      statement: tfTemplates[i],
+      difficulty: i % 2 === 0 ? 'Easy' : 'Medium'
+    })
+  }
+
+  // Generate short answer questions
   const shortAnswerQuestions: ExamQuestion[] = []
-  for (let i = 0; i < shortCount; i++) {
+  const saTemplates = [
+    `Explain the main concept discussed in the material.`,
+    `Describe how the key elements are related to each other.`,
+    `What is the significance of the primary topic covered?`,
+    `Summarize the most important points from the material.`,
+    `How would you apply this knowledge in a practical scenario?`,
+    `Discuss the relevance of the concepts presented.`
+  ]
+
+  for (let i = 0; i < shortCount && i < saTemplates.length; i++) {
     shortAnswerQuestions.push({
       question_number: i + 1,
-      question_text: `Explain the concept shown in the material.`,
+      question_text: saTemplates[i],
       expected_length: '2-4 sentences',
       difficulty: i % 2 === 0 ? 'Medium' : 'Hard'
     })
@@ -462,20 +514,24 @@ function generateFallbackExam(content: string, mcqCount: number, fillCount: numb
     answer_key: {
       mcq: mcqQuestions.map((q, i) => ({
         question_number: q.question_number,
-        correct_answer: ['A', 'B', 'C', 'D'][i % 4],
-        explanation: 'This is the correct answer.'
+        correct_answer: 'B',
+        explanation: `${q.question_text.substring(0, 50)}... The correct answer is B because it represents the most accurate understanding of the concept based on the provided material.`
       })),
-      fill_blank: fillBlankQuestions.map(q => ({
+      fill_blank: fillBlankQuestions.map((q, i) => ({
         question_number: q.question_number,
-        correct_answer: 'concept'
+        correct_answer: uniqueWords[i % uniqueWords.length] || 'concept'
       })),
-      true_false: truefalseQuestions.map(q => ({
+      true_false: truefalseQuestions.map((q, i) => ({
         question_number: q.question_number,
-        correct_answer: q.question_number % 2 === 1
+        correct_answer: i < 2 ? true : false
       })),
-      short_answer: shortAnswerQuestions.map(q => ({
+      short_answer: shortAnswerQuestions.map((q, i) => ({
         question_number: q.question_number,
-        key_points: ['Point 1', 'Point 2', 'Point 3']
+        key_points: [
+          'Identification of main concepts',
+          'Understanding of relationships',
+          'Application of knowledge'
+        ]
       }))
     }
   }
